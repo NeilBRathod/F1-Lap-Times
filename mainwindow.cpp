@@ -3,6 +3,7 @@
 #include <QtCharts/QValueAxis>  // Include the header for QValueAxis
 #include <QDebug>              // Include the header for qDebug
 #include <QtCharts/QLegend>    // Include the header for QLegend
+#include <QFont>               // Include the header for QFont
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -48,6 +49,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     chart->setAxisX(axisX, series);
     chart->setAxisY(axisY, series);
+
+    // Add title to the chart
+    QFont font;
+    font.setBold(true);
+    font.setPointSize(14);
+    chart->setTitleFont(font);
+    chart->setTitle("Formula 1 Lap Times - 2024 British Grand Prix");
 
     QChartView *chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
