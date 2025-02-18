@@ -27,8 +27,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    QList<QPointF> readCSVData(const QString &filePath);
-    QString readDriverName(const QString &filePath);
     void plotData(const QList<QPointF> &dataPoints, const QString &driverName);
 };
 #endif // MAINWINDOW_H
