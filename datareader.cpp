@@ -2,6 +2,23 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include <QDir>
+#include <QList>
+#include <QVector>
+
+QVector<QList<QPointF>> readAllCSVData(const QString &folderPath) {
+    QDir directory(folderPath);
+    QStringList csvFiles = directory.entryList(QStringList() << "*.csv", QDir::Files);
+    QVector<QList<QPointF>> allDataPoints;
+
+    for(const QString &fileName : csvFiles) {
+        QString filePath = directory.filePath(fileName);
+        QList<QPointF> dataPoints = readCSVData(filePath);
+        allDataPoints.append(dataPoints);
+    }
+
+    return allDataPoints;
+}
 
 QList<QPointF> readCSVData(const QString &filePath) {
     QFile file(filePath);
