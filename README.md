@@ -9,10 +9,11 @@ Packaged executable is available: `./F1Stats/build/Desktop-Release/release/F1Sta
 To open the project, please download [Qt Creator](https://doc.qt.io/qt-6/get-and-install-qt.html).
 
 ## Future Features:
-- Automatically pull data from any source 
-- Pull and display multiple driver lap times overlaid on the same graph
+- Automatically pull data from any source (via API)
 - Data analytics:
-  - Detect outlier lap times (pit stops, crashes, etc.)
-  - Plot moving lap time average
-  - Colour coding based on tyre stint
-- User able to select required driver(s) data to display on the graph
+  - Smarter detection of outlier lap times (pit stops, crashes, etc.)
+  - Remove outlier laps from moving average
+  - Add user interaction:
+      - Hover over to view lap time in more details
+      - Toggle drivers graphs on and off
+      - User can select from a larger dataset
