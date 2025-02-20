@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QtCharts/QScatterSeries>  // Include the header for QScatterSeries
 #include <QtCharts/QValueAxis>  // Include the header for QValueAxis
 #include <QDebug>              // Include the header for qDebug
 #include <QtCharts/QLegend>    // Include the header for QLegend
@@ -22,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     QChart *chart = new QChart();
-    raceData allLapData = allData("data/");
+    raceData allLapData = collectAllData("data/");
 
     for (int j = 0; j < allLapData.allLapTimes.size(); ++j) {
         QLineSeries *series = new QLineSeries();

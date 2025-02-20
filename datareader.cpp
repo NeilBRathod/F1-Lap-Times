@@ -6,12 +6,13 @@
 #include <QList>
 #include <QVector>
 
- raceData allData(const QString &folderPath) {
+// Function to read data from CSV files and populate raceData structure
+raceData collectAllData(const QString &folderPath) {
     raceData allData;
     QDir directory(folderPath);
     QStringList csvFiles = directory.entryList(QStringList() << "*.csv", QDir::Files);
 
-    for(const QString &fileName : csvFiles) {
+    for (const QString &fileName : csvFiles) {
         QString filePath = directory.filePath(fileName);
 
         // Read CSV data points and ensure the file is closed
@@ -27,11 +28,15 @@
         if (lapTimes.size() > allData.numLaps) {
             allData.numLaps = lapTimes.size();
         }
+        // Calculate pit stops and store them in the allData structure
+        QVector<int> pitStopsLaps = pitStops(lapTimes);
+        allData.pitStops.append(pitStopsLaps);
     }
 
     return allData;
 }
 
+// Function to read CSV data and return QList<QPointF>
 QList<QPointF> readCSVData(const QString &filePath) {
     QFile file(filePath);
     QList<QPointF> dataPoints;
@@ -64,6 +69,7 @@ QList<QPointF> readCSVData(const QString &filePath) {
     return dataPoints;
 }
 
+// Function to read driver name from a CSV file
 QString readDriverName(const QString &filePath) {
     QFile file(filePath);
     QString driverName;
@@ -77,5 +83,33 @@ QString readDriverName(const QString &filePath) {
     QString line = in.readLine();
     QStringList fields = line.split(',');
 
-    return driverName = fields[0];
+    if (!fields.isEmpty()) {
+        driverName = fields[0];
+    }
+
+    file.close();
+    return driverName;
+}
+
+// Definition of the pitStops function
+QVector<int> pitStops(const QList<QPointF> &lapTimes) {
+    double totalRaceTime = 0.0;  // Initialize to 0.0
+
+    for (int i = 0; i < lapTimes.size(); ++i) {
+        QPointF point = lapTimes[i];
+        totalRaceTime += point.y();
+    }
+
+    double averageLapTime = totalRaceTime / lapTimes.size();
+    QVector<int> pitStops;
+
+    for (int i = 0; i < lapTimes.size(); ++i) {
+        QPointF point = lapTimes[i];
+        if (point.y() > averageLapTime * 1.1) {
+            pitStops.append(static_cast<int>(point.x()));
+            qDebug() << "Pitstop Lap: " << point.x() << ", Lap Time: " << point.y();
+        }
+    }
+
+    return pitStops;
 }
