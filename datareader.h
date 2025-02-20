@@ -11,18 +11,28 @@
 #include <QVector>
 
 // Define the raceData structure
-struct raceData {
-    QVector<QList<QPointF>> allLapTimes;
+struct driverRaceData {
+    QList<QPointF> lapTimes;
+    QList<QPointF> movingAverageLapTime;
     int numLaps = 0;
-    QList<QString> driverNames;
-    QVector<int> pitStops;  // Add pitStops member
+    QString driverName;
+    QVector<int> pitStops;
     QString raceTitle;
+    float slowestLap;
+    float fastestLap;
 };
 
 // Function prototypes
-raceData collectAllData(const QString &folderPath);
+QVector<driverRaceData> collectAllData(const QString &folderPath);
+driverRaceData collectDriverData (const QString &filePath);
+
 QList<QPointF> readCSVData(const QString &filePath);
 QString readDriverName(const QString &filePath);
+
 QVector<int> pitStops(const QList<QPointF> &lapTimes);
+QList<QPointF> movingAverage(QList<QPointF> &lapTimes, int windowSize);
+float calSlowestLap(const QVector<driverRaceData> &allData);
+float calFastestLap(const QVector<driverRaceData> &allData);
+
 
 #endif // DATAREADER_H

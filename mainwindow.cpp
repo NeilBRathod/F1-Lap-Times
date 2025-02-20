@@ -1,6 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QtCharts/QSplineSeries>
+#include <QtCharts/QChartView>
+#include <QtCharts/QChart>
 #include <QtCharts/QScatterSeries>  // Include the header for QScatterSeries
+#include <QtCharts/QLegendMarker>
 #include <QtCharts/QValueAxis>  // Include the header for QValueAxis
 #include <QDebug>              // Include the header for qDebug
 #include <QtCharts/QLegend>    // Include the header for QLegend
@@ -23,17 +27,30 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     QChart *chart = new QChart();
-    raceData allLapData = collectAllData("data/");
+    QVector<driverRaceData> allLapData = collectAllData("data/");
 
-    for (int j = 0; j < allLapData.allLapTimes.size(); ++j) {
+    for (int j = 0; j < allLapData.size(); ++j) {
         QLineSeries *series = new QLineSeries();
+        QScatterSeries *scatterSeries = new QScatterSeries();
+        QSplineSeries *splineSeries = new QSplineSeries();
 
-        const QList<QPointF> &dataPoints = allLapData.allLapTimes.at(j);
+        const QList<QPointF> &dataPoints = allLapData[j].lapTimes;
+        const QVector<int> &pitStopLaps = allLapData[j].pitStops;
 
         for (int i = 0; i < dataPoints.size(); ++i) {
             const QPointF &point = dataPoints.at(i); // Converts data into x,y coordinates
             qDebug() << "Lap Time:" << point.y();  // Print the lap time value
             series->append(point.x(), point.y()); // Add x,y coordinates to chart data
+
+            // Check if the current lap is a pit stop
+            if (pitStopLaps.contains(static_cast<int>(point.x()))) {
+                scatterSeries->append(point.x(), point.y());
+            }
+        }
+
+        const QList<QPointF> &movingAverage= allLapData[j].movingAverageLapTime;
+        for (const QPointF &point : movingAverage) {
+            splineSeries->append(point.x(), point.y());
         }
 
         // Customize the pen and brush to make the points visible
@@ -41,11 +58,21 @@ MainWindow::MainWindow(QWidget *parent)
         pen.setWidth(2);
         series->setPen(pen);
         series->setPointsVisible(true);
+        series->setName(allLapData[j].driverName); // Set the series name for the legend
 
-        // Set the series name for the legend
-        series->setName(allLapData.driverNames[j]);
+        // Set the scatter series color and size
+        scatterSeries->setColor(Qt::red);
+        scatterSeries->setMarkerSize(10);
+
+        splineSeries->setPen(pen);
 
         chart->addSeries(series);
+        chart->addSeries(scatterSeries);
+        chart->addSeries(splineSeries);
+
+        // Hide the scatter/spline series in the legend
+        chart->legend()->markers(scatterSeries)[0]->setVisible(false);
+        chart->legend()->markers(splineSeries)[0]->setVisible(false);
     }
 
     chart->legend()->setVisible(true);
@@ -53,13 +80,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create and add axes to the chart
     QValueAxis *axisX = new QValueAxis();
-    axisX->setRange(1, allLapData.numLaps);
+    axisX->setRange(1, allLapData[0].numLaps); // Assuming numLaps is the same for all drivers
     axisX->setTitleText("Lap Number");
     axisX->setLabelFormat("%d");
     chart->addAxis(axisX, Qt::AlignBottom);
 
     QValueAxis *axisY = new QValueAxis();
-    axisY->setRange(80, 120); // Adjust the range based on your data
+
+    double slowestLap = calSlowestLap(allLapData);
+    double fastestLap = calFastestLap(allLapData);
+    qDebug() << "Slowest Lap:" << slowestLap << ", Fastest Lap:" << fastestLap;
+    axisY->setRange(fastestLap * 0.95, slowestLap * 1.05);
+
     axisY->setTitleText("Lap Time (seconds)");
     axisY->setLabelFormat("%.2f");
     chart->addAxis(axisY, Qt::AlignLeft);
@@ -70,6 +102,12 @@ MainWindow::MainWindow(QWidget *parent)
         if (lineSeries) {
             lineSeries->attachAxis(axisX);
             lineSeries->attachAxis(axisY);
+        }
+
+        QScatterSeries *scatterSeries = qobject_cast<QScatterSeries *>(abstractSeries);
+        if (scatterSeries) {
+            scatterSeries->attachAxis(axisX);
+            scatterSeries->attachAxis(axisY);
         }
     }
 
