@@ -10,9 +10,15 @@
 #include <QDir>
 #include <QVector>
 
+struct raceData {
+    QVector<QList<QPointF>> allLapTimes;
+    int numLaps;
+    QList<QString> driverNames;
+    QString raceTitle;
+};
 
 QList<QPointF> readCSVData(const QString &filePath);
 QString readDriverName(const QString &filePath);
-QVector<QList<QPointF>> readAllCSVData(const QString &folderPath);
+raceData allData(const QString &folderPath);
 
 #endif // DATAREADER_H

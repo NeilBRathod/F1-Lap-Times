@@ -6,18 +6,30 @@
 #include <QList>
 #include <QVector>
 
-QVector<QList<QPointF>> readAllCSVData(const QString &folderPath) {
+ raceData allData(const QString &folderPath) {
+    raceData allData;
     QDir directory(folderPath);
     QStringList csvFiles = directory.entryList(QStringList() << "*.csv", QDir::Files);
-    QVector<QList<QPointF>> allDataPoints;
 
     for(const QString &fileName : csvFiles) {
         QString filePath = directory.filePath(fileName);
+
+        // Read CSV data points and ensure the file is closed
         QList<QPointF> dataPoints = readCSVData(filePath);
-        allDataPoints.append(dataPoints);
+        allData.allLapTimes.append(dataPoints);
+
+        // Read driver name after dataPoints has been populated
+        QString driverName = readDriverName(filePath);
+        allData.driverNames.append(driverName);
     }
 
-    return allDataPoints;
+    for (const QList<QPointF> &lapTimes : allData.allLapTimes) {
+        if (lapTimes.size() > allData.numLaps) {
+            allData.numLaps = lapTimes.size();
+        }
+    }
+
+    return allData;
 }
 
 QList<QPointF> readCSVData(const QString &filePath) {
@@ -57,12 +69,11 @@ QString readDriverName(const QString &filePath) {
     QString driverName;
 
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning("Could not open the file for reading.");
+        qWarning("Could not open the file for reading name.");
         return driverName;
     }
 
     QTextStream in(&file);
-
     QString line = in.readLine();
     QStringList fields = line.split(',');
 

@@ -4,7 +4,16 @@
 #include <QDebug>              // Include the header for qDebug
 #include <QtCharts/QLegend>    // Include the header for QLegend
 #include <QFont>               // Include the header for QFont
-#include "datareader.h"        // Include the new header for data reading functions
+#include "datareader.h"        // Include the header for data reading functions
+
+#include <QRandomGenerator>  // Include the header for random number generation
+// Function to generate a random QColor
+QColor generateRandomColor() {
+    int red = QRandomGenerator::global()->bounded(256);
+    int green = QRandomGenerator::global()->bounded(256);
+    int blue = QRandomGenerator::global()->bounded(256);
+    return QColor(red, green, blue);
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -12,45 +21,56 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QLineSeries *series = new QLineSeries();
-    QList<QPointF> dataPoints = readCSVData("data/2024_British_GP_Lap_Times.csv");
+    QChart *chart = new QChart();
+    raceData allLapData = allData("data/");
 
-    for (int i = 0; i < dataPoints.size(); ++i) {
-        const QPointF &point = dataPoints.at(i); // Converts data into x,y coordinates
-        qDebug() << "Lap Time:" << point.y();  // Print the lap time value
-        series->append(point.x(), point.y()); // Add x,y coordinates to chart data
+    for (int j = 0; j < allLapData.allLapTimes.size(); ++j) {
+        QLineSeries *series = new QLineSeries();
+
+        const QList<QPointF> &dataPoints = allLapData.allLapTimes.at(j);
+
+        for (int i = 0; i < dataPoints.size(); ++i) {
+            const QPointF &point = dataPoints.at(i); // Converts data into x,y coordinates
+            qDebug() << "Lap Time:" << point.y();  // Print the lap time value
+            series->append(point.x(), point.y()); // Add x,y coordinates to chart data
+        }
+
+        // Customize the pen and brush to make the points visible
+        QPen pen(generateRandomColor());
+        pen.setWidth(2);
+        series->setPen(pen);
+        series->setPointsVisible(true);
+
+        // Set the series name for the legend
+        series->setName(allLapData.driverNames[j]);
+
+        chart->addSeries(series);
     }
 
-    // Customize the pen and brush to make the points visible
-    QPen pen(Qt::blue);
-    pen.setWidth(2);
-    series->setPen(pen);
-    series->setPointsVisible(true);
-    QBrush brush(Qt::red);
-    series->setBrush(brush);
-
-    // Set the series name for the legend
-    series->setName(readDriverName("data/2024_British_GP_Lap_Times.csv"));
-
-    QChart *chart = new QChart();
-    chart->addSeries(series);
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);  // Set the position of the legend
 
     // Create and add axes to the chart
     QValueAxis *axisX = new QValueAxis();
-    axisX->setRange(1, dataPoints.size());
+    axisX->setRange(1, allLapData.numLaps);
     axisX->setTitleText("Lap Number");
     axisX->setLabelFormat("%d");
     chart->addAxis(axisX, Qt::AlignBottom);
-    series->attachAxis(axisX);
 
     QValueAxis *axisY = new QValueAxis();
     axisY->setRange(80, 120); // Adjust the range based on your data
     axisY->setTitleText("Lap Time (seconds)");
     axisY->setLabelFormat("%.2f");
     chart->addAxis(axisY, Qt::AlignLeft);
-    series->attachAxis(axisY);
+
+    // Attach series to the axes
+    for (QAbstractSeries *abstractSeries : chart->series()) {
+        QLineSeries *lineSeries = qobject_cast<QLineSeries *>(abstractSeries);
+        if (lineSeries) {
+            lineSeries->attachAxis(axisX);
+            lineSeries->attachAxis(axisY);
+        }
+    }
 
     // Add title to the chart
     QFont font;
