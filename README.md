@@ -12,7 +12,6 @@ To open the project, please download [Qt Creator](https://doc.qt.io/qt-6/get-and
 - Automatically pull data from any source (via API)
 - Data analytics:
   - Smarter detection of outlier lap times (pit stops, crashes, etc.)
-  - Remove outlier laps from moving average
   - Add user interaction:
       - Hover over to view lap time in more details
       - Toggle drivers graphs on and off
