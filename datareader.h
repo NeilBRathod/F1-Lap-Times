@@ -13,6 +13,7 @@
 // Define the raceData structure
 struct driverRaceData {
     QList<QPointF> lapTimes;
+    double averageLapTime;
     QList<QPointF> movingAverageLapTime;
     int numLaps = 0;
     QString driverName;
@@ -29,8 +30,9 @@ driverRaceData collectDriverData (const QString &filePath);
 QList<QPointF> readCSVData(const QString &filePath);
 QString readDriverName(const QString &filePath);
 
-QVector<int> pitStops(const QList<QPointF> &lapTimes);
-QList<QPointF> movingAverage(QList<QPointF> &lapTimes, int windowSize);
+double averageLapTime (const QList<QPointF> &lapTimes);
+QVector<int> pitStops(const QList<QPointF> &lapTimes, double averageLapTime);
+QList<QPointF> movingAverage(const QList<QPointF> &lapTimes, int windowSize, double averageLapTime);
 float calSlowestLap(const QVector<driverRaceData> &allData);
 float calFastestLap(const QVector<driverRaceData> &allData);
 

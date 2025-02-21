@@ -1,5 +1,4 @@
 #include "datareader.h"
-#include <numeric>
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
@@ -29,8 +28,9 @@ driverRaceData collectDriverData(const QString &filePath) {
     driverRaceData driverData;
     driverData.lapTimes = readCSVData(filePath); // Read lap times from CSV
     driverData.driverName = readDriverName(filePath); // Set driver name
-    driverData.pitStops = pitStops(driverData.lapTimes); // Calculate pit stops
-    driverData.movingAverageLapTime = movingAverage(driverData.lapTimes, 4); // Calculate moving average
+    driverData.averageLapTime = averageLapTime(driverData.lapTimes); // Calculate the average lap time
+    driverData.pitStops = pitStops(driverData.lapTimes, driverData.averageLapTime); // Calculate pit stops
+    driverData.movingAverageLapTime = movingAverage(driverData.lapTimes, 4, driverData.averageLapTime); // Calculate moving average
 
     // Calculate the fastest and slowest lap
     driverData.fastestLap = driverData.lapTimes[0].y();
@@ -105,52 +105,73 @@ QString readDriverName(const QString &filePath) {
     return driverName; // Return the driver name
 }
 
-// Definition of the pitStops function
-QVector<int> pitStops(const QList<QPointF> &lapTimes) {
+double averageLapTime(const QList<QPointF>& lapTimes) {
     double totalRaceTime = 0.0;  // Initialize total race time to 0.0
 
     // Calculate the total race time
-    for (int i = 0; i < lapTimes.size(); ++i) {
-        QPointF point = lapTimes[i];
+    for (const QPointF& point : lapTimes) {
         totalRaceTime += point.y(); // Sum up the lap times
     }
 
-    double averageLapTime = totalRaceTime / lapTimes.size(); // Calculate the average lap time
-    QVector<int> pitStops; // Initialize the pitStops vector
+    return totalRaceTime / lapTimes.size();
+}
 
-    // Identify the pit stops based on lap times exceeding 110% of the average lap time
+
+// Definition of the pitStops function
+QVector<int> pitStops(const QList<QPointF> &lapTimes, double averageLapTime) {
+    QVector<int> pitStops;
+
+    // Identify the pit stops based on lap times exceeding 21s of the average lap time
     for (int i = 0; i < lapTimes.size(); ++i) {
         QPointF point = lapTimes[i];
-        if (point.y() > averageLapTime * 1.1) { // Check if the lap time is greater than 110% of the average lap time
+        if (point.y() > averageLapTime + 21) { // A pitstop statistically adds 21 seconds in British GP
             pitStops.append(static_cast<int>(point.x())); // Add the lap number to the pitStops vector
-            qDebug() << "Pitstop Lap: " << point.x() << ", Lap Time: " << point.y(); // Print the pit stop lap and lap time
+            qDebug() << "Pitstop Lap: " << point.x() << ", Lap Time: " << point.y();
         }
     }
-    return pitStops; // Return the pitStops vector
+    return pitStops;
 }
 
 // Calculate moving averages of lap times with a specified window size
-QList<QPointF> movingAverage(QList<QPointF> &lapTimes, int windowSize) {
-    QList<QPointF> movingAverages; // Initialize the movingAverages list
-    int dataSize = lapTimes.size(); // Get the number of lap times
+QList<QPointF> movingAverage(const QList<QPointF> &lapTimes, int windowSize, double averageLapTime) {
+    QList<QPointF> movingAverages;
+    int dataSize = lapTimes.size();
 
     // Calculate moving averages for each window
     for (int i = 0; i <= dataSize - windowSize; ++i) {
-        double sumY = 0; // Initialize the sum of lap times in the current window
+        double sumY = 0;
+        double avgY = 0;
+        double avgX = 0;
+        int validDataCount = 0;
 
         // Calculate the sum of the current window's y-coordinates (lap times)
         for (int j = i; j < i + windowSize; ++j) {
-            sumY += lapTimes[j].y(); // Add the lap time to the sum
+            qDebug() << "Not valid = " << lapTimes[j].y();
+
+            if (lapTimes[j].y() < averageLapTime + 21) { // 21 second pitstop assumed
+                sumY += lapTimes[j].y();
+                validDataCount++;
+            } else {
+            }
         }
 
-        double avgY = sumY / windowSize; // Calculate the average lap time in the current window
-        double avgX = lapTimes[i + windowSize / 2].x(); // Get the middle lap number of the window
+        // Calculate average only if there are valid data points
+        if (validDataCount > 0) {
+            avgY = sumY / validDataCount;
+            qDebug() << "Moving average = " << avgY << "X axis = " << avgX;
+            avgX = lapTimes[i + windowSize / 2].x();
+            movingAverages.append(QPointF(avgX, avgY));
+        } else {
+            // No valid data points found in this window
+            qDebug() << "No valid data in window starting at index " << i;
+        }
 
-        movingAverages.append(QPointF(avgX, avgY)); // Store the result in the movingAverages list
+        qDebug() << "Moving average Y = " << avgY;
     }
 
-    return movingAverages; // Return the list of moving averages
+    return movingAverages;
 }
+
 
 // Calculate the slowest lap time across all drivers
 float calSlowestLap(const QVector<driverRaceData> &allData) {
